@@ -52,6 +52,7 @@ namespace ET
         public Dictionary<string, HeadInfo> HeadInfos = new Dictionary<string, HeadInfo>();
     }
     
+    [EnableClass]
     public static class ExcelExporter
     {
         private static string template;
@@ -223,7 +224,7 @@ namespace ET
             }
             catch (Exception e)
             {
-                Log.Console(e.ToString());
+                Console.WriteLine(e.ToString());
             }
             finally
             {
@@ -344,14 +345,12 @@ namespace ET
                 PortableExecutableReference reference = MetadataReference.CreateFromFile(assembly.Location);
                 references.Add(reference);
             }
-
             CSharpCompilation compilation = CSharpCompilation.Create(null,
                 syntaxTrees.ToArray(),
                 references.ToArray(),
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             using MemoryStream memSteam = new MemoryStream();
-
             EmitResult emitResult = compilation.Emit(memSteam);
             if (!emitResult.Success)
             {
@@ -418,7 +417,7 @@ namespace ET
                 {
                     if (oldClassField.FieldCS != fieldCS)
                     {
-                        Log.Console($"field cs not same: {worksheet.Name} {fieldName} oldcs: {oldClassField.FieldCS} {fieldCS}");
+                        Console.WriteLine($"field cs not same: {worksheet.Name} {fieldName} oldcs: {oldClassField.FieldCS} {fieldCS}");
                     }
 
                     continue;
