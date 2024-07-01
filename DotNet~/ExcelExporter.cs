@@ -103,7 +103,7 @@ namespace ET
                 // 强制调用一下mongo，避免mongo库被裁剪
                 MongoHelper.ToJson(1);
                 
-                template = File.ReadAllText("./Bin/Template.txt");
+                template = File.ReadAllText("./Packages/cn.etetet.excel/DotNet~/Template.txt");
                 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
                 
                 PackagesLock packagesLock = PackageHelper.LoadEtPackagesLock("./");
