@@ -49,7 +49,7 @@ namespace ET
         public bool C;
         public bool S;
         public int Index;
-        public Dictionary<string, HeadInfo> HeadInfos = new Dictionary<string, HeadInfo>();
+        public Dictionary<string, HeadInfo> HeadInfos = new();
     }
     
     [EnableClass]
@@ -62,14 +62,13 @@ namespace ET
         private static string ServerClassDir;
         private static string CSClassDir;
 
-        private const string jsonDir = "./Config/Json";
+        private const string jsonDir = "./Packages/cn.etetet.excel/Config/Json";
 
-        private const string clientProtoDir = "./Packages/cn.etetet.Excel/Bundles/Config/";
-        private const string serverProtoDir = "./Config/Excel";
+        private const string serverProtoDir = "./Packages/cn.etetet.excel/Config/Bytes";
         private static Assembly[] configAssemblies = new Assembly[3];
 
-        private static Dictionary<string, Table> tables = new Dictionary<string, Table>();
-        private static Dictionary<string, ExcelPackage> packages = new Dictionary<string, ExcelPackage>();
+        private static Dictionary<string, Table> tables = new();
+        private static Dictionary<string, ExcelPackage> packages = new();
 
         private static Table GetTable(string protoName)
         {
@@ -215,12 +214,6 @@ namespace ET
                 {
                     ExportExcel(s, path);
                 }
-                
-                if (Directory.Exists(clientProtoDir))
-                {
-                    Directory.Delete(clientProtoDir, true);
-                }
-                FileHelper.CopyDirectory("./Config/Excel/c", clientProtoDir);
             }
             catch (Exception e)
             {

@@ -1,3 +1,9 @@
 obj/
 /**/AssemblyReference.asmref
 /**/AssemblyReference.asmref.meta
+/Config/Bytes/c/**/*.*
+/Config/Bytes/cs/**/*.*
+/Config/Bytes/s/**/*.*
+/Config/Json/c/**/*.*
+/Config/Json/cs/**/*.*
+/Config/Json/s/**/*.*
