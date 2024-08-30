@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "cn.etetet.excel",
   "displayName": "ET.Excel",
   "version": "0.0.7",
@@ -13,10 +13,8 @@
     "url": "https://github.com/egametang/ET"
   },
   "relatedPackages": {},
-  "dependencies": {
-  },
-  "publishConfig": 
-  { 
-    "registry": "https://npm.pkg.github.com/@ET-Packages" 
+  "dependencies": {},
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/@ET-Packages"
   }
 }
