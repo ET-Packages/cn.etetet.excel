@@ -1,7 +1,7 @@
 ﻿{
   "name": "cn.etetet.excel",
   "displayName": "ET.Excel",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "unity": "2022.3",
   "description": "excelexporter工具，把excel导出成代码跟配置数据",
   "author": {

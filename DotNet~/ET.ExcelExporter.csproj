@@ -45,5 +45,11 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
+    
+    <ItemGroup>
+      <Compile Include="..\Scripts\Model\Share\**\*.cs">
+          <Link>Config\%(RecursiveDir)%(FileName)%(Extension)</Link>
+      </Compile>
+    </ItemGroup>
 
 </Project>
