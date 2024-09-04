@@ -155,9 +155,16 @@ namespace ET
                     }
 
                     string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+                    
+                    //对Excel名称进行拆分, 移除掉最后一个_后面的文本内容 
+                    if(fileNameWithoutExtension.Contains('_'))
+                    {
+                        fileNameWithoutExtension = fileNameWithoutExtension.Substring(0, fileNameWithoutExtension.LastIndexOf('_'));
+                    }
+
                     string fileNameWithoutCS = fileNameWithoutExtension;
                     string cs = "cs";
-                    if (fileNameWithoutExtension.Contains("@"))
+                    if (fileNameWithoutExtension.Contains('@'))
                     {
                         string[] ss = fileNameWithoutExtension.Split("@");
                         fileNameWithoutCS = ss[0];
@@ -242,9 +249,16 @@ namespace ET
             }
 
             string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            
+            //对Excel名称进行拆分, 移除掉最后一个_后面的文本内容 
+            if(fileNameWithoutExtension.Contains('_'))
+            {
+                fileNameWithoutExtension = fileNameWithoutExtension.Substring(0, fileNameWithoutExtension.LastIndexOf('_'));
+            }
+            
             string fileNameWithoutCS = fileNameWithoutExtension;
             string cs = "cs";
-            if (fileNameWithoutExtension.Contains("@"))
+            if (fileNameWithoutExtension.Contains('@'))
             {
                 string[] ss = fileNameWithoutExtension.Split("@");
                 fileNameWithoutCS = ss[0];
@@ -369,6 +383,18 @@ namespace ET
         {
             foreach (ExcelWorksheet worksheet in p.Workbook.Worksheets)
             {
+                string sheetName = worksheet.Name.ToLower();
+                if (sheetName.StartsWith("#const_"))
+                {
+                    ExportConstClass(worksheet);
+                    continue;
+                }
+                if (sheetName.StartsWith("#enum_"))
+                {
+                    ExportEnumClass(worksheet);
+                    continue;
+                }
+
                 ExportSheetClass(worksheet, table);
             }
         }
@@ -464,6 +490,199 @@ namespace ET
             string content = template.Replace("(ConfigName)", table.Name).Replace(("(Fields)"), sb.ToString());
             sw.Write(content);
         }
+
+        #endregion
+
+        #region 导出Const 和 Enum
+
+        // 导出常量数据
+        static void ExportConstClass(ExcelWorksheet worksheet)
+        {
+            const int row = 2;
+            List<string> listConst = new List<string>();
+            
+            for (int col = 3; col <= worksheet.Dimension.End.Column; ++col)
+            {
+                string fieldName = worksheet.Cells[row + 2, col].Text.Trim();
+                if (fieldName == "")
+                {
+                    continue;
+                }
+
+                string fieldCS = worksheet.Cells[row, col].Text.Trim().ToLower();
+                if (fieldCS.Contains('#'))
+                {
+                    continue;
+                }
+                
+                if (fieldCS == "")
+                {
+                    fieldCS = "cs";
+                }
+
+                string fieldType = worksheet.Cells[row + 3, col].Text.Trim();
+
+                if (fieldType.ToLower() == "const")
+                {
+                    string constType = worksheet.Cells[row + 3, col + 1].Text.Trim();
+                    
+                    //数组类型 ,需要使用static readonly
+                    bool isStatic = constType.Contains("[]");
+                    
+                    for (int i = 0; i < 999999; i++)
+                    {
+                        string name = worksheet.Cells[row + 4 + i, col].Text.Trim();
+                        if(string.IsNullOrEmpty(name)) break;
+                        
+                        string desc = worksheet.Cells[row + 4 + i, col - 1].Text.Trim();
+                        string val = worksheet.Cells[row + 4 + i, col + 1].Text.Trim();
+
+                        if (isStatic)
+                        {
+                            //数组类型,需要使用{}包裹
+                            val = "{" + val + "}";
+                            listConst.Add($"        /// <summary>{desc}</summary>\n        [StaticField]\n        public static readonly {constType} {name} = {val}; \n");
+                        }
+                        else
+                        {
+                            listConst.Add($"        /// <summary>{desc}</summary>\n        public const {constType} {name} = {Convert(constType, val)}; \n");
+                        }
+                    }
+                }
+            }
+            
+            
+            string cs = worksheet.Cells[1, 1].Text.Trim();
+            
+            List<ConfigType> listTypes = new List<ConfigType>() { ConfigType.cs , ConfigType.c, ConfigType.s };
+            if (cs == "c")
+            {
+                listTypes.Remove(ConfigType.s);
+            }
+            else if (cs == "s")
+            {
+                listTypes.Remove(ConfigType.c);
+            }
+
+            foreach (var configType in listTypes)
+            {
+                string dir = GetClassDir(configType);
+                if (!Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+    
+                string ename = worksheet.Name.Substring(7); // #const_ 7个字符
+                string exportPath = Path.Combine(dir, $"{ename}.cs");
+    
+                using FileStream txt = new FileStream(exportPath, FileMode.Create);
+                using StreamWriter sw = new StreamWriter(txt);
+    
+                //生成常量
+                sw.WriteLine("namespace ET");
+                sw.WriteLine("{");
+                sw.WriteLine($"    public static partial class {ename}");
+                sw.WriteLine("    {");
+                for(int i = 0 ; i < listConst.Count ; i++)
+                {
+                    sw.WriteLine(listConst[i]);
+                }
+                sw.WriteLine("    }");
+                sw.WriteLine("}");
+            }
+        }
+        
+        
+        // 导出枚举数据
+        static void ExportEnumClass(ExcelWorksheet worksheet)
+        {
+            const int row = 2;
+            List<string> listEnums = new List<string>();
+            
+            for (int col = 3; col <= worksheet.Dimension.End.Column; ++col)
+            {
+                string fieldName = worksheet.Cells[row + 2, col].Text.Trim();
+                if (fieldName == "")
+                {
+                    continue;
+                }
+
+                string fieldCS = worksheet.Cells[row, col].Text.Trim().ToLower();
+                if (fieldCS.Contains('#'))
+                {
+                    continue;
+                }
+                
+                if (fieldCS == "")
+                {
+                    fieldCS = "cs";
+                }
+
+                string fieldType = worksheet.Cells[row + 3, col].Text.Trim();
+
+                if (fieldType.ToLower() == "enum")
+                {
+                    for (int i = 0; i < 999999; i++)
+                    {
+                        string name = worksheet.Cells[row + 4 + i, col].Text.Trim();
+                        if(string.IsNullOrEmpty(name)) break;
+                        
+                        string desc = worksheet.Cells[row + 4 + i, col - 1].Text.Trim();
+                        string val = worksheet.Cells[row + 4 + i, col + 1].Text.Trim();
+
+                        if (string.IsNullOrEmpty(val)) 
+                            val = ",";
+                        else
+                        {
+                            val = $" = {val},";
+                        }
+                        
+                        listEnums.Add($"        /// <summary>{desc}</summary>\n        {name}{val}\n");
+                    }
+                }
+            }
+            
+            
+            string cs = worksheet.Cells[1, 1].Text.Trim();
+            
+            List<ConfigType> listTypes = new List<ConfigType>() { ConfigType.cs , ConfigType.c, ConfigType.s };
+            if (cs == "c")
+            {
+                listTypes.Remove(ConfigType.s);
+            }
+            else if (cs == "s")
+            {
+                listTypes.Remove(ConfigType.c);
+            }
+
+            foreach (var configType in listTypes)
+            {
+                string dir = GetClassDir(configType);
+                if (!Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+    
+                string ename = worksheet.Name.Substring(6); // #enum_ 6个字符
+                string exportPath = Path.Combine(dir, $"{ename}.cs");
+    
+                using FileStream txt = new FileStream(exportPath, FileMode.Create);
+                using StreamWriter sw = new StreamWriter(txt);
+    
+                //生成枚举
+                sw.WriteLine("namespace ET");
+                sw.WriteLine("{");
+                sw.WriteLine($"    public enum {ename}");
+                sw.WriteLine("    {");
+                for(int i = 0 ; i < listEnums.Count ; i++)
+                {
+                    sw.WriteLine(listEnums[i]);
+                }
+                sw.WriteLine("    }");
+                sw.WriteLine("}");
+            }
+        }
+        
 
         #endregion
 
@@ -567,6 +786,9 @@ namespace ET
                 case "int[]":
                 case "int32[]":
                 case "long[]":
+                    if (string.IsNullOrEmpty(value))
+                        return "[0]";
+
                     return $"[{value}]";
                 case "string[]":
                 case "int[][]":
@@ -588,6 +810,15 @@ namespace ET
                     value = value.Replace("\\", "\\\\");
                     value = value.Replace("\"", "\\\"");
                     return $"\"{value}\"";
+                case "bool":
+                    {
+                        if (value == "1")
+                            return "true";
+                        if (value == "0" || string.IsNullOrEmpty(value))
+                            return "false";
+
+                        return value;
+                    }
                 default:
                     throw new Exception($"不支持此类型: {type}");
             }
